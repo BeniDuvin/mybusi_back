@@ -79,34 +79,24 @@ export class PurchaseService {
       });
 
       for (const line of lines) {
-        await tx.stock.update({
+        const stock = await tx.stock.upsert({
           where: {
             productId_depotId: {
               productId: line.productId,
               depotId,
             },
           },
-          data: {
+          update: {
             quantity: {
               increment: line.quantity,
             },
           },
-        });
-
-        const stock = await tx.stock.findUnique({
-          where: {
-            productId_depotId: {
-              productId: line.productId,
-              depotId,
-            },
+          create: {
+            productId: line.productId,
+            depotId,
+            quantity: line.quantity,
           },
         });
-
-        if (!stock) {
-          throw new NotFoundException(
-            `Stock not found for product ${line.productId} in depot ${depotId}`,
-          );
-        }
 
         await tx.stockMovement.create({
           data: {

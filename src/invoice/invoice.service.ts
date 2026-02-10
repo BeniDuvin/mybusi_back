@@ -34,11 +34,21 @@ export class InvoiceService {
       throw new Error('Sale not found');
     }
 
+    const invoiceNumber = `INV-${sale.saleNumber}`;
+
+    const existing = await this.prisma.invoice.findUnique({
+      where: { invoiceNumber },
+    });
+
+    if (existing) {
+      return Buffer.from(existing.content, 'base64');
+    }
+
     const pdfBuffer = await this.pdfService.generateInvoicePDF(sale, format);
 
     await this.prisma.invoice.create({
       data: {
-        invoiceNumber: `INV-${sale.saleNumber}`,
+        invoiceNumber,
         saleId: sale.id,
         type: 'SALE',
         format,

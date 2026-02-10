@@ -1,12 +1,18 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto } from './dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateProductDto) {
+    const depotId = dto.depotId || dto.depotid;
+    if (!depotId) {
+      throw new BadRequestException('depotId is required');
+    }
+
     const category = await this.prisma.category.findUnique({
       where: { id: dto.categoryId },
     });
@@ -24,14 +30,27 @@ export class ProductService {
     }
 
     const depot = await this.prisma.depot.findUnique({
-      where: { id: dto.depotId },
+      where: { id: depotId },
     });
     if (!depot) {
-      throw new NotFoundException(`Depot with ID ${dto.depotId} not found`);
+      throw new NotFoundException(`Depot with ID ${depotId} not found`);
     }
 
     const product = await this.prisma.product.create({
-      data: dto,
+      data: {
+        name: dto.name,
+        description: dto.description,
+        barcode: dto.barcode,
+        sku: dto.sku,
+        categoryId: dto.categoryId,
+        brandId: dto.brandId,
+        depotId,
+        purchasePrice: dto.purchasePrice,
+        sellingPrice: dto.sellingPrice,
+        minStock: dto.minStock,
+        imageUrl: dto.imageUrl,
+        isActive: dto.isActive,
+      },
       include: {
         category: true,
         brand: true,
@@ -42,7 +61,7 @@ export class ProductService {
     await this.prisma.stock.create({
       data: {
         productId: product.id,
-        depotId: dto.depotId,
+        depotId,
         quantity: 0,
       },
     });
@@ -160,33 +179,36 @@ export class ProductService {
   async remove(id: string) {
     await this.findOne(id);
 
-    return this.prisma.product.delete({
-      where: { id },
-    });
+    try {
+      return await this.prisma.product.update({
+        where: { id },
+        data: { isActive: false },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new BadRequestException(
+          'Produit lié à des achats/ventes; utilisez la désactivation.',
+        );
+      }
+      throw error;
+    }
   }
 
   async getLowStockProducts(depotId?: string) {
-    const where: any = {
-      stocks: {
-        some: {
-          quantity: {
-            lte: this.prisma.product.fields.minStock,
-          },
-        },
-      },
-    };
-
-    if (depotId) {
-      where.depotId = depotId;
-    }
-
-    return this.prisma.product.findMany({
-      where,
+    const products = await this.prisma.product.findMany({
+      where: depotId ? { depotId } : undefined,
       include: {
         category: true,
         brand: true,
         stocks: true,
       },
     });
+
+    return products.filter((product) =>
+      product.stocks.some((stock) => stock.quantity <= product.minStock),
+    );
   }
 }

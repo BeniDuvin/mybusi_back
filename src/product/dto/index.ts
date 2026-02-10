@@ -34,6 +34,11 @@ export class CreateProductDto {
   @IsString()
   depotId: string;
 
+  @ApiProperty({ required: false, description: 'Alias for depotId' })
+  @IsOptional()
+  @IsString()
+  depotid?: string;
+
   @ApiProperty()
   @IsNumber()
   @Min(0)

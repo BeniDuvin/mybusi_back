@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto';
-import { PaymentStatus, PaymentMethod } from '@prisma/client';
+import { PaymentStatus, PaymentMethod, Prisma } from '@prisma/client';
 
 @Injectable()
 export class PaymentService {
@@ -66,23 +66,7 @@ export class PaymentService {
       });
 
       if (saleId && status === PaymentStatus.COMPLETED) {
-        const sale = await tx.sale.findUnique({ where: { id: saleId } });
-        
-        if (!sale) {
-          throw new NotFoundException(`Sale with ID ${saleId} not found`);
-        }
-        
-        const newPaidAmount = sale.paidAmount + amount;
-        const newRemainingAmount = sale.totalAmount - newPaidAmount;
-
-        await tx.sale.update({
-          where: { id: saleId },
-          data: {
-            paidAmount: newPaidAmount,
-            remainingAmount: newRemainingAmount,
-            status: newRemainingAmount === 0 ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
-          },
-        });
+        await this.updateSaleTotals(tx, saleId);
       }
 
       if (clientId && status === PaymentStatus.COMPLETED && !saleId) {
@@ -205,23 +189,7 @@ export class PaymentService {
         });
 
         if (payment.saleId) {
-          const sale = await tx.sale.findUnique({ where: { id: payment.saleId } });
-          
-          if (!sale) {
-            throw new NotFoundException(`Sale with ID ${payment.saleId} not found`);
-          }
-          
-          const newPaidAmount = sale.paidAmount + payment.amount;
-          const newRemainingAmount = sale.totalAmount - newPaidAmount;
-
-          await tx.sale.update({
-            where: { id: payment.saleId },
-            data: {
-              paidAmount: newPaidAmount,
-              remainingAmount: newRemainingAmount,
-              status: newRemainingAmount === 0 ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
-            },
-          });
+          await this.updateSaleTotals(tx, payment.saleId);
         }
       });
 
@@ -246,5 +214,29 @@ export class PaymentService {
     return {
       status: PaymentStatus.COMPLETED,
     };
+  }
+
+  private async updateSaleTotals(tx: Prisma.TransactionClient, saleId: string) {
+    const sale = await tx.sale.findUnique({ where: { id: saleId } });
+    if (!sale) {
+      throw new NotFoundException(`Sale with ID ${saleId} not found`);
+    }
+
+    const completedPayments = await tx.payment.aggregate({
+      where: { saleId, status: PaymentStatus.COMPLETED },
+      _sum: { amount: true },
+    });
+
+    const paidAmount = completedPayments._sum.amount ?? 0;
+    const remainingAmount = Math.max(0, sale.totalAmount - paidAmount);
+
+    await tx.sale.update({
+      where: { id: saleId },
+      data: {
+        paidAmount,
+        remainingAmount,
+        status: remainingAmount === 0 ? PaymentStatus.COMPLETED : PaymentStatus.PENDING,
+      },
+    });
   }
 }

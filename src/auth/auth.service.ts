@@ -224,6 +224,7 @@ export class AuthService {
     });
 
     return { message: 'Logged out successfully' };
+
   }
 
   private async generateTokens(userId: string, email: string, role: Role) {

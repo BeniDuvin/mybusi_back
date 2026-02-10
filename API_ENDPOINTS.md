@@ -76,6 +76,29 @@ Obtenir le profil de l'utilisateur connecté
 
 ---
 
+## 👤 Utilisateurs (Admin)
+
+#### GET `/users?page=1&limit=10&search=&role=&isActive=`
+Obtenir la liste des utilisateurs (Admin uniquement)
+
+#### GET `/users/:id`
+Obtenir un utilisateur par ID (Admin uniquement)
+
+#### PATCH `/users/:id`
+Mettre à jour un utilisateur (role, isActive, profil)
+```json
+{
+  "email": "user@example.com",
+  "phone": "+22505000000",
+  "firstName": "John",
+  "lastName": "Doe",
+  "role": "GERANT",
+  "isActive": true
+}
+```
+
+---
+
 ## 🏢 Dépôts
 
 #### POST `/depots`

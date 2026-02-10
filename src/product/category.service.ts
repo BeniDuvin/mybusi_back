@@ -57,8 +57,9 @@ export class CategoryService {
   async remove(id: string) {
     await this.findOne(id);
 
-    return this.prisma.category.delete({
+    return this.prisma.category.update({
       where: { id },
+      data: { isActive: false },
     });
   }
 }

@@ -13,6 +13,7 @@ import { PurchaseModule } from './purchase/purchase.module';
 import { FinanceModule } from './finance/finance.module';
 import { LogModule } from './log/log.module';
 import { InvoiceModule } from './invoice/invoice.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { InvoiceModule } from './invoice/invoice.module';
     FinanceModule,
     LogModule,
     InvoiceModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
