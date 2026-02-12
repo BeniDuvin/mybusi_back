@@ -9,6 +9,12 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { OtpService } from './services/otp.service';
 
+const googleEnabled = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_SECRET &&
+    process.env.GOOGLE_CALLBACK_URL,
+);
+
 @Module({
   imports: [
     PrismaModule,
@@ -25,7 +31,12 @@ import { OtpService } from './services/otp.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, OtpService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    OtpService,
+    ...(googleEnabled ? [GoogleStrategy] : []),
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}
