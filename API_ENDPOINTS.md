@@ -81,6 +81,20 @@ Obtenir le profil de l'utilisateur connecté
 #### GET `/users?page=1&limit=10&search=&role=&isActive=`
 Obtenir la liste des utilisateurs (Admin uniquement)
 
+#### POST `/users`
+Créer un utilisateur (Admin uniquement)
+```json
+{
+  "email": "user@example.com",
+  "phone": "+22505000000",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "role": "CLIENT",
+  "isActive": true
+}
+```
+
 #### GET `/users/:id`
 Obtenir un utilisateur par ID (Admin uniquement)
 

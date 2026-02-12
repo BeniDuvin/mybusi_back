@@ -1,10 +1,10 @@
-import { Controller, Get, Param, Patch, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, Body, UseGuards, Post } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { UpdateUserDto } from './dto';
+import { CreateUserDto, UpdateUserDto } from './dto';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
@@ -29,6 +29,14 @@ export class UserController {
       limit ? parseInt(limit) : 10,
       filters,
     );
+  }
+
+  @Post()
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Create a user (admin only)' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  create(@Body() dto: CreateUserDto) {
+    return this.userService.create(dto);
   }
 
   @Get(':id')

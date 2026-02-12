@@ -5,11 +5,62 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateUserDto } from './dto';
+import { CreateUserDto, UpdateUserDto } from './dto';
+import * as bcrypt from 'bcrypt';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
+
+  async create(dto: CreateUserDto) {
+    const { email, phone, password, firstName, lastName, role, isActive } = dto;
+
+    if (!email && !phone) {
+      throw new BadRequestException('Email or phone is required');
+    }
+
+    if (email) {
+      const existingEmail = await this.prisma.user.findUnique({ where: { email } });
+      if (existingEmail) {
+        throw new ConflictException('Email already exists');
+      }
+    }
+
+    if (phone) {
+      const existingPhone = await this.prisma.user.findUnique({ where: { phone } });
+      if (existingPhone) {
+        throw new ConflictException('Phone number already exists');
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        phone,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role: role || Role.CLIENT,
+        isActive: isActive ?? true,
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        emailVerified: true,
+        phoneVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
 
   async findAll(page: number = 1, limit: number = 10, filters?: any) {
     const skip = (page - 1) * limit;
@@ -115,8 +166,14 @@ export class UserService {
       }
     }
 
-    if (dto.email === undefined && dto.phone === undefined && dto.firstName === undefined &&
-        dto.lastName === undefined && dto.role === undefined && dto.isActive === undefined) {
+    if (
+      dto.email === undefined &&
+      dto.phone === undefined &&
+      dto.firstName === undefined &&
+      dto.lastName === undefined &&
+      dto.role === undefined &&
+      dto.isActive === undefined
+    ) {
       throw new BadRequestException('No fields to update');
     }
 
