@@ -1,22 +1,41 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting seed...');
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  // =========================
+  // ✅ ADMIN FROM ENV
+  // =========================
+
+  const adminEmail = process.env.MAILADMIN;
+  const adminPassword = process.env.MAILADMINPASSWORD;
+  const adminFirstName = process.env.MAILADMINNAME || 'Admin';
+  const adminLastName = process.env.MAILLASTNAME || 'Admin';
+  const adminPhone = process.env.MAILADMINPHONE || '';
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      '❌ MAILADMIN ou MAILADMINPASSWORD manquant dans le fichier .env',
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@mydepot.com' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      email: 'admin@mydepot.com',
-      phone: '+22670000001',
+      email: adminEmail,
+      phone: adminPhone,
       password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'MyDepot',
+      firstName: adminFirstName,
+      lastName: adminLastName,
       role: Role.ADMIN,
       isActive: true,
       emailVerified: true,
@@ -24,205 +43,108 @@ async function main() {
     },
   });
 
-  console.log('✅ Admin user created:', adminUser.email);
+  console.log('✅ Admin user ready:', adminUser.email);
 
-  const depot1 = await prisma.depot.upsert({
-    where: { id: 'depot-1' },
-    update: {},
-    create: {
-      id: 'depot-1',
-      name: 'Dépôt Central',
-      address: 'Abidjan, Cocody',
-      phone: '+22501020304',
-      email: 'central@mydepot.com',
-      isActive: true,
-    },
-  });
+  // =========================
+  // ✅ CATEGORIES
+  // =========================
 
-  const depot2 = await prisma.depot.upsert({
-    where: { id: 'depot-2' },
-    update: {},
-    create: {
-      id: 'depot-2',
-      name: 'Dépôt Yopougon',
-      address: 'Abidjan, Yopougon',
-      phone: '+22501020305',
-      email: 'yopougon@mydepot.com',
-      isActive: true,
-    },
-  });
-
-  console.log('✅ Depots created');
-
-  await prisma.userDepot.createMany({
-    data: [
-      { userId: adminUser.id, depotId: depot1.id },
-      { userId: adminUser.id, depotId: depot2.id },
-    ],
-    skipDuplicates: true,
-  });
-
-  const categoryBoissons = await prisma.category.upsert({
-    where: { name: 'Boissons gazeuses' },
-    update: {},
-    create: {
+  const categories = [
+    {
       name: 'Boissons gazeuses',
       description: 'Sodas et boissons gazeuses',
-      isActive: true,
     },
-  });
-
-  const categoryBieres = await prisma.category.upsert({
-    where: { name: 'Bières' },
-    update: {},
-    create: {
+    {
+      name: 'Wisky',
+      description: 'Boissons alcoolisées type whisky',
+    },
+    {
+      name: 'Vin',
+      description: 'Vins blancs et rouges',
+    },
+    {
       name: 'Bières',
       description: 'Bières locales et importées',
-      isActive: true,
     },
-  });
-
-  const categoryEaux = await prisma.category.upsert({
-    where: { name: 'Eaux' },
-    update: {},
-    create: {
+    {
       name: 'Eaux',
       description: 'Eaux minérales et de source',
-      isActive: true,
     },
-  });
-
-  const categoryJus = await prisma.category.upsert({
-    where: { name: 'Jus' },
-    update: {},
-    create: {
+    {
       name: 'Jus',
       description: 'Jus de fruits',
-      isActive: true,
-    },
-  });
-
-  console.log('✅ Categories created');
-
-  const brandCocaCola = await prisma.brand.upsert({
-    where: { name: 'Coca-Cola' },
-    update: {},
-    create: {
-      name: 'Coca-Cola',
-      description: 'The Coca-Cola Company',
-      isActive: true,
-    },
-  });
-
-  const brandSolibra = await prisma.brand.upsert({
-    where: { name: 'SOLIBRA' },
-    update: {},
-    create: {
-      name: 'SOLIBRA',
-      description: 'Brasseries ivoiriennes',
-      isActive: true,
-    },
-  });
-
-  const brandAwabio = await prisma.brand.upsert({
-    where: { name: 'Awabio' },
-    update: {},
-    create: {
-      name: 'Awabio',
-      description: 'Eaux minérales',
-      isActive: true,
-    },
-  });
-
-  console.log('✅ Brands created');
-
-  const products = [
-    {
-      name: 'Coca-Cola 33cl',
-      barcode: 'CC33001',
-      sku: 'COCA-33',
-      categoryId: categoryBoissons.id,
-      brandId: brandCocaCola.id,
-      depotId: depot1.id,
-      purchasePrice: 200,
-      sellingPrice: 300,
-      minStock: 50,
     },
     {
-      name: 'Coca-Cola 1L',
-      barcode: 'CC1L001',
-      sku: 'COCA-1L',
-      categoryId: categoryBoissons.id,
-      brandId: brandCocaCola.id,
-      depotId: depot1.id,
-      purchasePrice: 500,
-      sellingPrice: 700,
-      minStock: 30,
-    },
-    {
-      name: 'Flag 65cl',
-      barcode: 'FLAG65001',
-      sku: 'FLAG-65',
-      categoryId: categoryBieres.id,
-      brandId: brandSolibra.id,
-      depotId: depot1.id,
-      purchasePrice: 400,
-      sellingPrice: 600,
-      minStock: 40,
-    },
-    {
-      name: 'Awabio 1.5L',
-      barcode: 'AWA15001',
-      sku: 'AWABIO-15',
-      categoryId: categoryEaux.id,
-      brandId: brandAwabio.id,
-      depotId: depot1.id,
-      purchasePrice: 150,
-      sellingPrice: 250,
-      minStock: 60,
+      name: 'Boissons energetiques',
+      description: 'Boissons energetiques',
     },
   ];
 
-  for (const productData of products) {
-    const product = await prisma.product.create({
-      data: productData,
-    });
-
-    await prisma.stock.create({
-      data: {
-        productId: product.id,
-        depotId: depot1.id,
-        quantity: 100,
+  for (const category of categories) {
+    await prisma.category.upsert({
+      where: { name: category.name },
+      update: {},
+      create: {
+        name: category.name,
+        description: category.description,
+        isActive: true,
       },
     });
 
-    console.log(`✅ Product created: ${product.name}`);
+    console.log(`✅ Category ready: ${category.name}`);
   }
 
-  const supplier1 = await prisma.supplier.create({
-    data: {
-      name: 'Société de Distribution SARL',
-      phone: '+22501111111',
-      email: 'contact@distribution.ci',
-      address: 'Abidjan, Zone Industrielle',
-      isActive: true,
+  // =========================
+  // ✅ BRANDS
+  // =========================
+
+  const brands = [
+    {
+      name: 'BRAILICO',
+      description: 'The BRAILICO Company',
     },
-  });
+    {
+      name: 'BRASCO',
+      description: 'Brasseries BRASCO',
+    },
+    {
+      name: 'EAU MAYO',
+      description: 'Eaux minérales',
+    },
+  ];
 
-  console.log('✅ Supplier created');
+  for (const brand of brands) {
+    await prisma.brand.upsert({
+      where: { name: brand.name },
+      update: {},
+      create: {
+        name: brand.name,
+        description: brand.description,
+        isActive: true,
+      },
+    });
 
-  const client1 = await prisma.client.create({
-    data: {
+    console.log(`✅ Brand ready: ${brand.name}`);
+  }
+
+  // =========================
+  // ✅ DEFAULT CLIENT
+  // =========================
+
+ /*  const client = await prisma.client.upsert({
+    where: { email: 'jean.kouassi@example.com' },
+    update: {},
+    create: {
       firstName: 'Jean',
       lastName: 'Kouassi',
       phone: '+22505555555',
       email: 'jean.kouassi@example.com',
-      address: 'Abidjan, Marcory',
+      address: 'Client par défaut',
       isActive: true,
     },
   });
 
-  console.log('✅ Client created');
+  console.log('✅ Client ready:', client.email); */
 
   console.log('🎉 Seed completed successfully!');
 }
