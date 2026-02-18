@@ -23,9 +23,12 @@ export class FinanceService {
       salesFilter.depotId = depotId;
     }
 
-    const [sales, purchases, expenses, salaries] = await Promise.all([
+    const [sales, otherIncomes, purchases, expenses, salaries] = await Promise.all([
       this.prisma.sale.findMany({
         where: { ...salesFilter, status: PaymentStatus.COMPLETED },
+      }),
+      this.prisma.otherIncome.findMany({
+        where: { ...(depotId ? { depotId, ...dateFilter } : dateFilter) },
       }),
       this.prisma.purchase.findMany({
         where: { ...salesFilter },
@@ -39,17 +42,19 @@ export class FinanceService {
     ]);
 
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.paidAmount, 0);
+    const totalOtherIncome = otherIncomes.reduce((sum, otherIncome) => sum + otherIncome.amount, 0);
     const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.paidAmount, 0);
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const totalSalaries = salaries.reduce((sum, salary) => sum + salary.amount, 0);
 
-    const totalIncome = totalRevenue;
+    const totalIncome = totalRevenue + totalOtherIncome;
     const totalOutcome = totalPurchases + totalExpenses + totalSalaries;
     const netProfit = totalIncome - totalOutcome;
 
     return {
       income: {
         sales: totalRevenue,
+        otherIncomes: totalOtherIncome,
         total: totalIncome,
       },
       expenses: {

@@ -48,6 +48,53 @@ export class UpdateExpenseDto {
   reference?: string;
 }
 
+export class CreateOtherIncomeDto {
+  @ApiProperty()
+  @IsString()
+  depotId: string;
+
+  @ApiProperty()
+  @IsString()
+  category: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @ApiProperty()
+  @IsString()
+  description: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  reference?: string;
+}
+
+export class UpdateOtherIncomeDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  amount?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  reference?: string;
+}
+
 export class CreateSalaryPaymentDto {
   @ApiProperty()
   @IsString()
