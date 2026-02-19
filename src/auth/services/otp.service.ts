@@ -13,6 +13,13 @@ export class OtpService {
   }
 
   async sendOtp(phone: string, otpCode: string) {
+    const otpMock = this.config.get<string>('OTP_MOCK') === 'true';
+
+    if (otpMock) {
+      console.log(`[OTP_MOCK] Code OTP pour ${phone}: ${otpCode} (valide 5 min)`);
+      return true;
+    }
+
     const rawToken = this.config.get<string>('MTN_SMS_TOKEN');
     const sender = this.config.get<string>('MTN_SMS_SENDER');
     const callbackUrl = this.config.get<string>('MTN_SMS_CALLBACK_URL');
@@ -25,29 +32,36 @@ export class OtpService {
       ? rawToken.replace(/^Token\s+/, '')
       : rawToken;
 
-    const response = await fetch('https://sms.mtncongo.net/api/sms/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        Authorization: `Token ${token}`,
-      },
-      body: JSON.stringify({
-        msg: `Votre code OTP est: ${otpCode}`,
-        receivers: phone,
-        sender,
-        callback_url: callbackUrl,
-      }),
-    });
+    try {
+      const response = await fetch('https://sms.mtncongo.net/api/sms/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({
+          msg: `Votre code OTP est: ${otpCode}`,
+          receivers: phone,
+          sender,
+          callback_url: callbackUrl,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new InternalServerErrorException('SMS provider error');
+      if (!response.ok) {
+        throw new InternalServerErrorException('SMS provider error');
+      }
+
+      const result = (await response.json()) as { status?: string };
+      if (result?.status && !['200', '201'].includes(result.status)) {
+        throw new InternalServerErrorException('SMS provider rejected request');
+      }
+
+      return true;
+    } catch (err) {
+      if (err instanceof InternalServerErrorException) throw err;
+      throw new InternalServerErrorException(
+        'Impossible de contacter le service SMS. En développement, ajoutez OTP_MOCK=true dans .env.',
+      );
     }
-
-    const result = (await response.json()) as { status?: string };
-    if (result?.status && !['200', '201'].includes(result.status)) {
-      throw new InternalServerErrorException('SMS provider rejected request');
-    }
-
-    return true;
   }
 }

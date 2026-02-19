@@ -13,6 +13,7 @@ import {
   SendOtpDto,
   VerifyOtpDto,
   RefreshTokenDto,
+  ChangePasswordDto,
 } from './dto';
 import { GetUser } from './decorators/get-user.decorator';
 import type { User } from '@prisma/client';
@@ -90,5 +91,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   getMe(@GetUser() user: User) {
     return user;
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change current user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 401, description: 'Current password incorrect' })
+  changePassword(@GetUser() user: User, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user.id, dto);
   }
 }

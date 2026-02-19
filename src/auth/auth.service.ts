@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, RegisterDto, VerifyOtpDto, SendOtpDto } from './dto';
+import { LoginDto, RegisterDto, VerifyOtpDto, SendOtpDto, ChangePasswordDto } from './dto';
 import { OtpService } from './services/otp.service';
 import { Role } from '@prisma/client';
 
@@ -224,7 +224,27 @@ export class AuthService {
     });
 
     return { message: 'Logged out successfully' };
+  }
 
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Mot de passe actuel incorrect');
+    }
+
+    const isCurrentValid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Mot de passe actuel incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { message: 'Mot de passe modifié avec succès' };
   }
 
   private async generateTokens(userId: string, email: string, role: Role) {
