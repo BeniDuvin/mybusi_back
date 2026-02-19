@@ -170,15 +170,34 @@ src/
 
 ```bash
 npm run start:dev              # Lancer en mode watch
-npm run build                  # Compiler le projet
-npm run start:prod             # Lancer en production
+npm run build                  # Compiler + Prisma generate
+npm run start:prod             # Migrations + lancer en production
 npm run prisma:generate        # Générer le client Prisma
-npm run prisma:migrate         # Exécuter les migrations
+npm run prisma:migrate         # Exécuter les migrations (dev)
+npm run prisma:deploy          # Appliquer les migrations (prod)
 npm run prisma:seed            # Insérer les données de test
 npm run prisma:studio          # Ouvrir Prisma Studio
 npm run test                   # Exécuter les tests
 npm run lint                   # Linter le code
 ```
+
+## 🚀 Déploiement (Railway, Render, etc.)
+
+### Variables d'environnement requises
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | URL PostgreSQL (fournie par Railway/Render) |
+| `JWT_SECRET` | Secret pour signer les JWT |
+| `PORT` | Port du serveur (fourni par la plateforme) |
+| `CORS_ORIGIN` | (Optionnel) URLs autorisées séparées par des virgules, ex: `https://app.mydepot.com` |
+
+### Commandes de déploiement
+
+1. **Build** : `npm run build` (génère Prisma + compile NestJS)
+2. **Start** : `npm run start:prod` (applique les migrations puis démarre l'API)
+
+> `start:prod` exécute automatiquement `prisma migrate deploy` avant de lancer le serveur pour synchroniser la BD avec le schéma.
 
 ## 📄 Licence
 
