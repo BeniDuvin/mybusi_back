@@ -3,28 +3,24 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { OtherIncomeService } from './other-income.service';
 import { CreateOtherIncomeDto, UpdateOtherIncomeDto } from './dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { StoreContextGuard } from '../depot/store-context.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { Role } from '@prisma/client';
 import type { User } from '@prisma/client';
 
 @ApiTags('Other Incomes')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('other-incomes')
 export class OtherIncomeController {
   constructor(private otherIncomeService: OtherIncomeService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Create a new other income entry' })
   create(@Body() dto: CreateOtherIncomeDto, @GetUser() user: User) {
     return this.otherIncomeService.create(dto, user.id);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get all other income entries' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -42,21 +38,18 @@ export class OtherIncomeController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get an other income entry by ID' })
   findOne(@Param('id') id: string) {
     return this.otherIncomeService.findOne(id);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Update an other income entry' })
   update(@Param('id') id: string, @Body() dto: UpdateOtherIncomeDto) {
     return this.otherIncomeService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete an other income entry' })
   remove(@Param('id') id: string) {
     return this.otherIncomeService.remove(id);

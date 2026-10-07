@@ -2,19 +2,16 @@ import { Controller, Get, UseGuards, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { LogService } from './log.service';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { StoreContextGuard } from '../depot/store-context.guard';
 
 @ApiTags('Logs')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('logs')
 export class LogController {
   constructor(private logService: LogService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get all logs with pagination and filters' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })

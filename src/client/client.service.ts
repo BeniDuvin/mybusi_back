@@ -28,10 +28,12 @@ export class ClientService {
     });
   }
 
-  async findAll(page: number = 1, limit: number = 10, search?: string) {
+  async findAll(page: number = 1, limit: number = 10, search?: string, depotId?: string) {
     const skip = (page - 1) * limit;
 
-    const where = search
+    const where = {
+      depotId,
+      ...(search
       ? {
           OR: [
             { firstName: { contains: search, mode: 'insensitive' as const } },
@@ -40,7 +42,8 @@ export class ClientService {
             { email: { contains: search, mode: 'insensitive' as const } },
           ],
         }
-      : {};
+      : {}),
+    };
 
     const [clients, total] = await Promise.all([
       this.prisma.client.findMany({

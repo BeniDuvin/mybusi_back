@@ -1,10 +1,14 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
+
+  // Base64 expands a 5 MB image; allow room for the encoded JSON payload.
+  app.useBodyParser('json', { limit: '8mb' });
 
   app.setGlobalPrefix('api/v1');
 
@@ -25,8 +29,8 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('MyDepot API')
-    .setDescription('API complète pour la gestion de dépôt de boisson')
+    .setTitle('MyBusi API')
+    .setDescription('API de gestion commerciale multi-boutiques')
     .setVersion('1.0')
     .addTag('Authentication', 'Endpoints pour l\'authentification et l\'autorisation')
     .addTag('Depots', 'Gestion des dépôts')
@@ -49,7 +53,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
-    customSiteTitle: 'MyDepot API Documentation',
+    customSiteTitle: 'MyBusi API Documentation',
     customCss: '.swagger-ui .topbar { display: none }',
   });
 

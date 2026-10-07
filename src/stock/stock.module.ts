@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { StockController } from './stock.controller';
 import { StockService } from './stock.service';
+import { DepotModule } from '../depot/depot.module';
 
 @Module({
+  imports: [DepotModule],
   controllers: [StockController],
   providers: [StockService],
   exports: [StockService],

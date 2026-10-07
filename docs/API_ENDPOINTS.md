@@ -57,7 +57,15 @@ Vérifier le code OTP et se connecter
 Initier l'authentification Google OAuth
 
 #### GET `/auth/google/callback`
-Callback Google OAuth
+Callback Google OAuth. Après authentification, redirige l'application vers `GOOGLE_MOBILE_REDIRECT_URI` avec un code éphémère à usage unique (aucun jeton dans l'URL).
+
+#### POST `/auth/google/exchange`
+Échanger le code mobile Google contre les identifiants de session. Le code expire après cinq minutes et ne peut être utilisé qu'une fois.
+```json
+{ "code": "one-time-code" }
+```
+
+Configuration mobile attendue : `GOOGLE_MOBILE_REDIRECT_URI=mydepot://auth/callback`.
 
 #### POST `/auth/refresh`
 Rafraîchir le token d'accès

@@ -6,6 +6,10 @@ import { PaymentStatus } from '@prisma/client';
 export class CreateSupplierDto {
   @ApiProperty()
   @IsString()
+  depotId: string;
+
+  @ApiProperty()
+  @IsString()
   name: string;
 
   @ApiProperty()

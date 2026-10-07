@@ -4,6 +4,10 @@ import { IsString, IsEmail, IsBoolean, IsOptional } from 'class-validator';
 export class CreateClientDto {
   @ApiProperty()
   @IsString()
+  depotId: string;
+
+  @ApiProperty()
+  @IsString()
   firstName: string;
 
   @ApiProperty()

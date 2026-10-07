@@ -7,13 +7,15 @@ export class SalaryService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateSalaryPaymentDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: dto.userId },
+    const membership = await this.prisma.userDepot.findUnique({
+      where: { userId_depotId: { userId: dto.userId, depotId: dto.depotId } },
     });
 
-    if (!user) {
-      throw new NotFoundException(`User with ID ${dto.userId} not found`);
+    if (!membership?.isActive) {
+      throw new NotFoundException('Membre introuvable dans cette boutique');
     }
+    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+    if (!user) throw new NotFoundException('Membre introuvable');
 
     const salary = await this.prisma.salaryPayment.create({
       data: dto,
@@ -38,6 +40,7 @@ export class SalaryService {
         amount: dto.amount,
         description: `Salary payment for ${user.firstName} ${user.lastName} - ${dto.period}`,
         reference: salary.id,
+        depotId: dto.depotId,
       },
     });
 
@@ -52,6 +55,7 @@ export class SalaryService {
     if (filters?.userId) {
       where.userId = filters.userId;
     }
+    if (filters?.depotId) where.depotId = filters.depotId;
 
     if (filters?.period) {
       where.period = filters.period;

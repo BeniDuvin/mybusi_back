@@ -37,6 +37,6 @@ const googleEnabled = Boolean(
     OtpService,
     ...(googleEnabled ? [GoogleStrategy] : []),
   ],
-  exports: [AuthService],
+  exports: [AuthService, OtpService],
 })
 export class AuthModule {}

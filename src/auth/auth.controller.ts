@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiTags,
@@ -14,15 +14,20 @@ import {
   VerifyOtpDto,
   RefreshTokenDto,
   ChangePasswordDto,
+  EmailOtpDto,
+  EmailOnlyDto,
+  ResetPasswordDto,
+  GoogleCodeExchangeDto,
 } from './dto';
 import { GetUser } from './decorators/get-user.decorator';
 import type { User } from '@prisma/client';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private config: ConfigService) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -38,6 +43,26 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('email/verify')
+  verifyEmail(@Body() dto: EmailOtpDto) {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Post('email/resend')
+  resendEmailOtp(@Body() dto: EmailOnlyDto) {
+    return this.authService.resendEmailOtp(dto.email);
+  }
+
+  @Post('password/forgot')
+  forgotPassword(@Body() dto: EmailOnlyDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('password/reset')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Post('otp/send')
@@ -63,8 +88,20 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google OAuth callback' })
-  googleAuthCallback(@Req() req: Request & { user: any }) {
-    return this.authService.googleLogin(req.user);
+  async googleAuthCallback(@Req() req: Request & { user: any }, @Res() res: Response) {
+    const redirectUri = this.config.get<string>('GOOGLE_MOBILE_REDIRECT_URI') ?? 'mydepot://auth/callback';
+    if (redirectUri !== 'mydepot://auth/callback') {
+      return res.status(503).send({ message: 'Connexion Google mobile non configurée' });
+    }
+
+    const code = await this.authService.createGoogleExchangeCode(req.user);
+    return res.redirect(302, `${redirectUri}?code=${encodeURIComponent(code)}`);
+  }
+
+  @Post('google/exchange')
+  @ApiOperation({ summary: 'Exchange a one-time Google mobile code for app credentials' })
+  exchangeGoogleCode(@Body() dto: GoogleCodeExchangeDto) {
+    return this.authService.exchangeGoogleCode(dto.code);
   }
 
   @Post('refresh')

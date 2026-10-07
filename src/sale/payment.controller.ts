@@ -3,19 +3,16 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { CreatePaymentDto } from './dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { StoreContextGuard } from '../depot/store-context.guard';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('payments')
 export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.GERANT, Role.CAISSIER)
   @ApiOperation({ summary: 'Create a new payment' })
   @ApiResponse({ status: 201, description: 'Payment created successfully' })
   create(@Body() dto: CreatePaymentDto) {
@@ -27,6 +24,7 @@ export class PaymentController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'saleId', required: false, type: String })
+  @ApiQuery({ name: 'depotId', required: false, type: String })
   @ApiQuery({ name: 'clientId', required: false, type: String })
   @ApiQuery({ name: 'method', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
@@ -48,7 +46,6 @@ export class PaymentController {
   }
 
   @Post(':id/verify')
-  @Roles(Role.ADMIN, Role.GERANT, Role.CAISSIER)
   @ApiOperation({ summary: 'Verify mobile money payment status' })
   verify(@Param('id') id: string) {
     return this.paymentService.verifyMobileMoneyPayment(id);

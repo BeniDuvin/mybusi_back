@@ -2,19 +2,16 @@ import { Controller, Get, UseGuards, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { FinanceService } from './finance.service';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { StoreContextGuard } from '../depot/store-context.guard';
 
 @ApiTags('Finance')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('finance')
 export class FinanceController {
   constructor(private financeService: FinanceService) {}
 
   @Get('summary')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get financial summary' })
   @ApiQuery({ name: 'depotId', required: false, type: String })
   @ApiQuery({ name: 'startDate', required: false, type: String })
@@ -32,7 +29,6 @@ export class FinanceController {
   }
 
   @Get('cashflow')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get cash flow report' })
   @ApiQuery({ name: 'depotId', required: false, type: String })
   @ApiQuery({ name: 'startDate', required: false, type: String })
@@ -50,7 +46,6 @@ export class FinanceController {
   }
 
   @Get('dashboard')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get dashboard statistics' })
   @ApiQuery({ name: 'depotId', required: false, type: String })
   getDashboard(@Query('depotId') depotId?: string) {

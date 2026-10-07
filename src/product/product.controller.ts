@@ -13,19 +13,16 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { CreateProductDto, UpdateProductDto } from './dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { StoreContextGuard } from '../depot/store-context.guard';
 
 @ApiTags('Products')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('products')
 export class ProductController {
   constructor(private productService: ProductService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
   create(@Body() dto: CreateProductDto) {
@@ -66,7 +63,6 @@ export class ProductController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Update a product' })
   @ApiResponse({ status: 200, description: 'Product updated successfully' })
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
@@ -74,7 +70,6 @@ export class ProductController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete a product' })
   @ApiResponse({ status: 200, description: 'Product deleted successfully' })
   remove(@Param('id') id: string) {

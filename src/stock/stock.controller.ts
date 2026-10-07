@@ -11,13 +11,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { StockService } from './stock.service';
 import { StockMovementDto, StockAdjustmentDto } from './dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { StoreContextGuard } from '../depot/store-context.guard';
 
 @ApiTags('Stock')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('stock')
 export class StockController {
   constructor(private stockService: StockService) {}
@@ -45,7 +43,6 @@ export class StockController {
   }
 
   @Post('add')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Add stock to a product' })
   @ApiResponse({ status: 201, description: 'Stock added successfully' })
   addStock(@Body() dto: StockMovementDto) {
@@ -53,7 +50,6 @@ export class StockController {
   }
 
   @Post('remove')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Remove stock from a product' })
   @ApiResponse({ status: 201, description: 'Stock removed successfully' })
   removeStock(@Body() dto: StockMovementDto) {
@@ -61,7 +57,6 @@ export class StockController {
   }
 
   @Post('adjust')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Adjust stock quantity' })
   @ApiResponse({ status: 201, description: 'Stock adjusted successfully' })
   adjustStock(@Body() dto: StockAdjustmentDto) {

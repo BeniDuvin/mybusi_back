@@ -98,6 +98,10 @@ export class UpdateOtherIncomeDto {
 export class CreateSalaryPaymentDto {
   @ApiProperty()
   @IsString()
+  depotId: string;
+
+  @ApiProperty()
+  @IsString()
   userId: string;
 
   @ApiProperty()

@@ -13,19 +13,16 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ClientService } from './client.service';
 import { CreateClientDto, UpdateClientDto } from './dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { StoreContextGuard } from '../depot/store-context.guard';
 
 @ApiTags('Clients')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('clients')
 export class ClientController {
   constructor(private clientService: ClientService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.GERANT, Role.CAISSIER)
   @ApiOperation({ summary: 'Create a new client' })
   @ApiResponse({ status: 201, description: 'Client created successfully' })
   create(@Body() dto: CreateClientDto) {
@@ -41,11 +38,13 @@ export class ClientController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('depotId') depotId?: string,
   ) {
     return this.clientService.findAll(
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 10,
       search,
+      depotId,
     );
   }
 
@@ -62,14 +61,12 @@ export class ClientController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Update a client' })
   update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
     return this.clientService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete a client' })
   remove(@Param('id') id: string) {
     return this.clientService.remove(id);

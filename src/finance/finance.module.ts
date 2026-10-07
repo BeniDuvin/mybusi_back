@@ -7,8 +7,10 @@ import { SalaryController } from './salary.controller';
 import { SalaryService } from './salary.service';
 import { OtherIncomeController } from './other-income.controller';
 import { OtherIncomeService } from './other-income.service';
+import { DepotModule } from '../depot/depot.module';
 
 @Module({
+  imports: [DepotModule],
   controllers: [FinanceController, ExpenseController, SalaryController, OtherIncomeController],
   providers: [FinanceService, ExpenseService, SalaryService, OtherIncomeService],
   exports: [FinanceService, ExpenseService, SalaryService, OtherIncomeService],

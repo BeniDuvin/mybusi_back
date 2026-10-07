@@ -5,8 +5,10 @@ import { CategoryController } from './category.controller';
 import { CategoryService } from './category.service';
 import { BrandController } from './brand.controller';
 import { BrandService } from './brand.service';
+import { DepotModule } from '../depot/depot.module';
 
 @Module({
+  imports: [DepotModule],
   controllers: [ProductController, CategoryController, BrandController],
   providers: [ProductService, CategoryService, BrandService],
   exports: [ProductService, CategoryService, BrandService],

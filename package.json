@@ -1,8 +1,8 @@
 {
-  "name": "mydepot-backend",
+  "name": "mybusi-backend",
   "version": "1.0.0",
-  "description": "API complète pour la gestion de dépôt de boisson",
-  "author": "MyDepot Team",
+  "description": "API MyBusi de gestion commerciale multi-boutiques",
+  "author": "BENSOFTCG",
   "private": true,
   "license": "MIT",
   "scripts": {
@@ -77,6 +77,15 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.0"
+  },
+  "jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": ".",
+    "roots": ["<rootDir>/src", "<rootDir>/test"],
+    "testRegex": ".spec.ts$",
+    "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+    "testEnvironment": "node",
+    "modulePathIgnorePatterns": ["<rootDir>/.kilo/"]
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

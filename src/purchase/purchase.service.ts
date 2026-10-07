@@ -14,6 +14,9 @@ export class PurchaseService {
     if (!supplier) {
       throw new NotFoundException(`Supplier with ID ${supplierId} not found`);
     }
+    if (supplier.depotId !== depotId) {
+      throw new NotFoundException('Fournisseur introuvable dans cette boutique');
+    }
 
     const purchaseNumber = await this.generatePurchaseNumber();
 
@@ -32,6 +35,9 @@ export class PurchaseService {
 
       if (!product) {
         throw new NotFoundException(`Product with ID ${line.productId} not found`);
+      }
+      if (product.depotId !== depotId) {
+        throw new NotFoundException('Produit introuvable dans cette boutique');
       }
 
       const totalPrice = line.unitPrice * line.quantity;

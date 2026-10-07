@@ -28,10 +28,12 @@ export class SupplierService {
     });
   }
 
-  async findAll(page: number = 1, limit: number = 10, search?: string) {
+  async findAll(page: number = 1, limit: number = 10, search?: string, depotId?: string) {
     const skip = (page - 1) * limit;
 
-    const where = search
+    const where = {
+      depotId,
+      ...(search
       ? {
           OR: [
             { name: { contains: search, mode: 'insensitive' as const } },
@@ -39,7 +41,8 @@ export class SupplierService {
             { email: { contains: search, mode: 'insensitive' as const } },
           ],
         }
-      : {};
+      : {}),
+    };
 
     const [suppliers, total] = await Promise.all([
       this.prisma.supplier.findMany({

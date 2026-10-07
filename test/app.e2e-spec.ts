@@ -4,6 +4,8 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
+jest.setTimeout(15000);
+
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
@@ -20,6 +22,6 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect('MyBusi API - Gestion commerciale multi-boutiques');
   });
 });

@@ -91,8 +91,11 @@ export class PaymentService {
 
     const where: any = {};
 
-    if (filters?.saleId) {
-      where.saleId = filters.saleId;
+    if (filters?.saleId || filters?.depotId) {
+      where.sale = {
+        ...(filters.saleId ? { id: filters.saleId } : {}),
+        ...(filters.depotId ? { depotId: filters.depotId } : {}),
+      };
     }
 
     if (filters?.clientId) {

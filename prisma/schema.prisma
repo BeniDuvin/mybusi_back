@@ -14,6 +14,30 @@ enum Role {
   CLIENT
 }
 
+enum StoreMemberRole {
+  ADMINISTRATEUR
+  GERANT
+  CAISSIER
+  VENDEUR
+  MAGASINIER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  GRACE_PERIOD
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum SaaSPaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
 enum PaymentMethod {
   CASH
   MOBILE_MONEY
@@ -57,23 +81,44 @@ model User {
   role          Role     @default(CLIENT)
   isActive      Boolean  @default(true)
   emailVerified Boolean  @default(false)
+  mustChangePassword Boolean @default(false)
   phoneVerified Boolean  @default(false)
   refreshToken  String?
   otpCode       String?
   otpExpiry     DateTime?
+  otpAttempts   Int      @default(0)
+  emailOtpHash  String?
+  emailOtpExpiry DateTime?
+  emailOtpAttempts Int @default(0)
+  passwordResetOtpHash String?
+  passwordResetOtpExpiry DateTime?
+  passwordResetOtpAttempts Int @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   depots        UserDepot[]
+  ownedDepots   Depot[] @relation("DepotOwner")
   sales         Sale[]
   purchases     Purchase[]
   expenses      Expense[]
   otherIncomes  OtherIncome[]
   salaryPayments SalaryPayment[]
   logs          Log[]
+  oauthExchangeCodes OAuthExchangeCode[]
 
   @@index([email])
   @@index([phone])
+}
+
+model OAuthExchangeCode {
+  id        String   @id @default(uuid())
+  codeHash  String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 model Depot {
@@ -82,34 +127,109 @@ model Depot {
   address     String
   phone       String
   email       String?
+  description String?
+  logoUrl     String?
+  ownerId     String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   users       UserDepot[]
+  roles       StoreRole[]
+  owner       User?     @relation("DepotOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   products    Product[]
+  clients     Client[]
+  suppliers   Supplier[]
   stocks      Stock[]
   sales       Sale[]
   purchases   Purchase[]
   expenses    Expense[]
   otherIncomes OtherIncome[]
   logs        Log[]
+  subscription Subscription?
+  saasPayments SaaSPayment[]
+  financialTransactions FinancialTransaction[]
+  salaryPayments SalaryPayment[]
 
   @@index([name])
+  @@index([ownerId])
 }
 
 model UserDepot {
   id        String   @id @default(uuid())
   userId    String
   depotId   String
+  role      StoreMemberRole @default(VENDEUR)
+  isActive  Boolean @default(true)
+  customRoleId String?
   assignedAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   depot     Depot    @relation(fields: [depotId], references: [id], onDelete: Cascade)
+  customRole StoreRole? @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   @@unique([userId, depotId])
   @@index([userId])
   @@index([depotId])
+}
+
+model StoreRole {
+  id        String @id @default(uuid())
+  depotId   String
+  name      String
+  createdAt DateTime @default(now())
+  depot     Depot @relation(fields: [depotId], references: [id], onDelete: Cascade)
+  members   UserDepot[]
+  permissions StoreRolePermission[]
+  @@unique([depotId, name])
+  @@index([depotId])
+}
+
+model Permission {
+  id        String @id @default(uuid())
+  key       String @unique
+  label     String
+  roles     StoreRolePermission[]
+}
+
+model StoreRolePermission {
+  roleId       String
+  permissionId String
+  role         StoreRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model Subscription {
+  id                String @id @default(uuid())
+  depotId           String @unique
+  planCode          String @default("TRIAL")
+  status            SubscriptionStatus @default(TRIAL)
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+  gracePeriodEnd     DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  depot              Depot @relation(fields: [depotId], references: [id], onDelete: Cascade)
+  payments           SaaSPayment[]
+  @@index([status, currentPeriodEnd])
+}
+
+model SaaSPayment {
+  id             String @id @default(uuid())
+  depotId        String
+  subscriptionId String?
+  amount         Int
+  currency       String @default("XAF")
+  provider       String @default("K-PAY")
+  transactionId  String?
+  status         SaaSPaymentStatus @default(PENDING)
+  paidAt         DateTime?
+  createdAt      DateTime @default(now())
+  depot          Depot @relation(fields: [depotId], references: [id], onDelete: Restrict)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  @@index([depotId, createdAt])
+  @@index([transactionId])
 }
 
 model Category {
@@ -202,6 +322,7 @@ model Client {
   phone       String   @unique
   email       String?  @unique
   address     String?
+  depotId     String?
   isActive    Boolean  @default(true)
   totalDebt   Float    @default(0)
   createdAt   DateTime @default(now())
@@ -209,9 +330,11 @@ model Client {
 
   sales       Sale[]
   payments    Payment[]
+  depot       Depot? @relation(fields: [depotId], references: [id], onDelete: Cascade)
 
   @@index([phone])
   @@index([email])
+  @@index([depotId])
 }
 
 model Sale {
@@ -289,15 +412,18 @@ model Supplier {
   phone       String   @unique
   email       String?  @unique
   address     String?
+  depotId     String?
   isActive    Boolean  @default(true)
   totalDebt   Float    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   purchases   Purchase[]
+  depot       Depot? @relation(fields: [depotId], references: [id], onDelete: Cascade)
 
   @@index([phone])
   @@index([email])
+  @@index([depotId])
 }
 
 model Purchase {
@@ -387,13 +513,16 @@ model SalaryPayment {
   period      String
   paymentDate DateTime
   notes       String?
+  depotId     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user        User     @relation(fields: [userId], references: [id])
+  depot       Depot? @relation(fields: [depotId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([paymentDate])
+  @@index([depotId])
 }
 
 model FinancialTransaction {
@@ -402,13 +531,16 @@ model FinancialTransaction {
   category    String
   amount      Float
   description String
+  depotId     String?
   reference   String?
   date        DateTime        @default(now())
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  depot       Depot? @relation(fields: [depotId], references: [id], onDelete: Cascade)
 
   @@index([type])
   @@index([date])
+  @@index([depotId])
 }
 
 model Log {

@@ -37,7 +37,7 @@ export class FinanceService {
         where: { ...(depotId ? { depotId, ...dateFilter } : dateFilter) },
       }),
       this.prisma.salaryPayment.findMany({
-        where: dateFilter,
+        where: { ...dateFilter, ...(depotId ? { depotId } : {}) },
       }),
     ]);
 
@@ -84,7 +84,7 @@ export class FinanceService {
     }
 
     const transactions = await this.prisma.financialTransaction.findMany({
-      where: dateFilter,
+      where: { ...dateFilter, ...(depotId ? { depotId } : {}) },
       orderBy: { date: 'desc' },
     });
 
@@ -126,7 +126,7 @@ export class FinanceService {
           createdAt: { gte: startOfMonth },
         },
       }),
-      this.prisma.client.count(),
+      this.prisma.client.count({ where: { sales: { some: { depotId } } } }),
       this.prisma.product.count(depotId ? { where: { depotId } } : undefined),
       this.prisma.stock.count({
         where: {

@@ -3,21 +3,18 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PurchaseService } from './purchase.service';
 import { CreatePurchaseDto, UpdatePurchaseDto, PayPurchaseDto } from './dto';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { StoreContextGuard } from '../depot/store-context.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { Role } from '@prisma/client';
 import type { User } from '@prisma/client';
 
 @ApiTags('Purchases')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('purchases')
 export class PurchaseController {
   constructor(private purchaseService: PurchaseService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Create a new purchase' })
   create(@Body() dto: CreatePurchaseDto, @GetUser() user: User) {
     return this.purchaseService.create(dto, user.id);
@@ -46,14 +43,12 @@ export class PurchaseController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Update a purchase' })
   update(@Param('id') id: string, @Body() dto: UpdatePurchaseDto) {
     return this.purchaseService.update(id, dto);
   }
 
   @Post(':id/pay')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Pay for a purchase' })
   pay(@Param('id') id: string, @Body() dto: PayPurchaseDto) {
     return this.purchaseService.payPurchase(id, dto.amount);

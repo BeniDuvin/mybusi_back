@@ -15,8 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('returns the MyBusi service identity', () => {
+      expect(appController.getHello()).toBe('MyBusi API - Gestion commerciale multi-boutiques');
     });
   });
 });

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -14,10 +15,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: config.get('JWT_SECRET'),
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: any) {
+  async validate(request: Request, payload: any) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -29,12 +31,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         role: true,
         isActive: true,
         emailVerified: true,
+        mustChangePassword: true,
         phoneVerified: true,
         createdAt: true,
         updatedAt: true,
       },
     });
 
+    if (!user?.isActive) throw new UnauthorizedException();
+    const path = (request.originalUrl || request.url || '').split('?')[0];
+    const allowedDuringPasswordChange = ['/auth/me', '/auth/change-password', '/auth/logout']
+      .some((suffix) => path.endsWith(suffix));
+    if (user.mustChangePassword && !allowedDuringPasswordChange) {
+      throw new ForbiddenException('Changez votre mot de passe temporaire avant de continuer');
+    }
     return user;
   }
 }

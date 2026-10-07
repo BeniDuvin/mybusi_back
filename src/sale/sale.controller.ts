@@ -14,20 +14,18 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@ne
 import { SaleService } from './sale.service';
 import { CreateSaleDto, UpdateSaleDto } from './dto';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { StoreContextGuard } from '../depot/store-context.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { Role } from '@prisma/client';
 import type { User } from '@prisma/client';
 
 @ApiTags('Sales')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), StoreContextGuard)
 @Controller('sales')
 export class SaleController {
   constructor(private saleService: SaleService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.GERANT, Role.CAISSIER)
   @ApiOperation({ summary: 'Create a new sale' })
   @ApiResponse({ status: 201, description: 'Sale created successfully' })
   create(@Body() dto: CreateSaleDto, @GetUser() user: User) {
@@ -54,7 +52,6 @@ export class SaleController {
   }
 
   @Get('report')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Get sales report' })
   @ApiQuery({ name: 'depotId', required: false, type: String })
   @ApiQuery({ name: 'startDate', required: false, type: String })
@@ -78,14 +75,12 @@ export class SaleController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Update a sale' })
   update(@Param('id') id: string, @Body() dto: UpdateSaleDto) {
     return this.saleService.update(id, dto);
   }
 
   @Post(':id/cancel')
-  @Roles(Role.ADMIN, Role.GERANT)
   @ApiOperation({ summary: 'Cancel a sale' })
   cancel(@Param('id') id: string) {
     return this.saleService.cancelSale(id);

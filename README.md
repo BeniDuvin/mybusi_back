@@ -1,6 +1,21 @@
-# 🍾 MyDepot Backend - API de Gestion de Dépôt de Boisson
+# MyBusi Backend — API de gestion commerciale multi-boutiques
 
-API complète développée avec **NestJS**, **PostgreSQL**, et **Prisma** pour la gestion d'un dépôt de boisson.
+API de MyBusi développée avec **NestJS**, **PostgreSQL** et **Prisma** pour la gestion commerciale de boutiques.
+
+## MyBusi — authentification, boutiques et abonnements
+
+`Depot` est conservé comme nom de modèle pour préserver les données et API existantes; il représente désormais une boutique. Les routes sont accessibles avec les préfixes `/api/v1/stores` (nouveau) et `/api/v1/depots` (compatibilité).
+
+- Un compte créé par email reçoit un OTP de vérification via SMTP; l'API ne délivre la session qu'après validation.
+- Les routes email `POST /api/v1/auth/email/verify`, `/email/resend`, `/password/forgot` et `/password/reset` utilisent des OTP hachés, expirant après dix minutes avec cinq tentatives maximum.
+- La première boutique créée par un utilisateur lui attribue le rôle `ADMINISTRATEUR` et ouvre une période d'essai de trois mois.
+- Les routes de produits, stocks, ventes, achats, clients, fournisseurs et finances vérifient l'appartenance à la boutique et appliquent son statut d'abonnement aux écritures.
+- `GET /api/v1/stores/:id/members` et `GET /api/v1/stores/:id/subscription` exposent les membres et le statut de l'abonnement aux membres autorisés.
+- Les paiements SaaS sont historisés. L'intégration K-Pay attend sa documentation officielle; aucun endpoint de paiement n'est simulé.
+
+Créer `.env` à partir de `.env.example`, configurer un SMTP fonctionnel, puis appliquer la migration avec `npm run prisma:deploy`. La migration conserve les données; les boutiques historiques reçoivent 90 jours d'accès `LEGACY` et leur membre le plus ancien devient propriétaire. Les clients et fournisseurs existants sont rattachés à la boutique de leur première vente/commande lorsqu'elle existe.
+
+Les contrats d'API existants restent disponibles dans Swagger à `/api/docs`. Les clients doivent fournir `depotId` pour les listes et créations associées à une boutique.
 
 ## 📋 Table des matières
 
@@ -144,7 +159,7 @@ Consultez [API_ENDPOINTS.md](./API_ENDPOINTS.md) pour la liste complète.
 
 ### Compte de test
 ```
-Email: admin@mydepot.com
+Email: admin@mybusi.app
 Password: admin123
 Role: ADMIN
 ```
@@ -190,7 +205,7 @@ npm run lint                   # Linter le code
 | `DATABASE_URL` | URL PostgreSQL (fournie par Railway/Render) |
 | `JWT_SECRET` | Secret pour signer les JWT |
 | `PORT` | Port du serveur (fourni par la plateforme) |
-| `CORS_ORIGIN` | (Optionnel) URLs autorisées séparées par des virgules, ex: `https://app.mydepot.com` |
+| `CORS_ORIGIN` | (Optionnel) URLs autorisées séparées par des virgules, ex: `https://app.mybusi.app` |
 
 ### Commandes de déploiement
 
@@ -205,4 +220,4 @@ MIT
 
 ---
 
-**Développé avec ❤️ par MyDepot Team**
+**Développé avec ❤️ par BENSOFTCG**
