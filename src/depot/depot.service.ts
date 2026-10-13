@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, InternalServerErrorE
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDepotDto, UpdateDepotDto, AssignUserToDepotDto, InviteMemberDto } from './dto';
 import { Role, StoreMemberRole } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
 import { OtpService } from '../auth/services/otp.service';
 

@@ -1,5 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -111,10 +111,7 @@ async function main() {
       name: 'EAU MAYO',
       description: 'Eaux minérales',
     },
-    {
-      name: 'GO-FRESH',
-      description: 'Eaux minérales',
-    },
+    
   ];
 
   for (const brand of brands) {
