@@ -111,6 +111,10 @@ async function main() {
       name: 'EAU MAYO',
       description: 'Eaux minérales',
     },
+    {
+      name: 'GO-FRESH',
+      description: 'Eaux minérales',
+    },
   ];
 
   for (const brand of brands) {
