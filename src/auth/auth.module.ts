@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { OtpService } from './services/otp.service';
+import type { StringValue } from 'ms';
 
 const googleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID &&
@@ -22,12 +23,13 @@ const googleEnabled = Boolean(
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: config.get<string>('JWT_EXPIRATION'),
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret) throw new Error('JWT_SECRET est obligatoire pour démarrer l’API');
+
+        const expiresIn = config.get<string>('JWT_EXPIRATION', '1h') as StringValue;
+        return { secret, signOptions: { expiresIn } };
+      },
     }),
   ],
   controllers: [AuthController],
