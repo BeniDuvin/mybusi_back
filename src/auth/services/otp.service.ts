@@ -1,10 +1,17 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { randomInt } from 'crypto';
 
 @Injectable()
 export class OtpService {
+  private readonly logger = new Logger(OtpService.name);
+
   constructor(private config: ConfigService) {}
 
   async generateOtp() {
@@ -18,7 +25,7 @@ export class OtpService {
   async sendEmailOtp(email: string, code: string, purpose: 'verification' | 'password-reset') {
     const { transporter, from } = this.createTransporter();
     const subject = purpose === 'verification' ? 'Vérification de votre adresse MyBusi' : 'Réinitialisation de votre mot de passe MyBusi';
-    await transporter.sendMail({
+    await this.deliverEmail(transporter, {
       from,
       to: email,
       subject,
@@ -41,7 +48,7 @@ export class OtpService {
     const credentials = input.temporaryPassword
       ? `Mot de passe temporaire : ${input.temporaryPassword}. Après vérification de votre e-mail, vous devrez le changer avant d’accéder à l’application.`
       : 'Connectez-vous avec votre compte MyBusi habituel pour accéder à cette boutique.';
-    await transporter.sendMail({
+    await this.deliverEmail(transporter, {
       from,
       to: input.email,
       subject: `Invitation MyBusi · ${input.storeName}`,
@@ -51,15 +58,47 @@ export class OtpService {
 
   private createTransporter() {
     const host = this.config.get<string>('SMTP_HOST');
-    const port = Number(this.config.get<string>('SMTP_PORT') || 587);
+    const configuredPort = this.config.get<string>('SMTP_PORT') || '587';
+    const port = Number(configuredPort);
     const user = this.config.get<string>('SMTP_USER');
     const pass = this.config.get<string>('SMTP_PASSWORD');
     const from = this.config.get<string>('SMTP_FROM') || user;
-    if (!host || !user || !pass || !from) {
+    if (!host || !user || !pass || !from || !Number.isInteger(port) || port < 1 || port > 65535) {
       throw new InternalServerErrorException('Email service is not configured');
     }
-    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
+    });
     return { transporter, from };
+  }
+
+  /** Delivers mail while keeping provider diagnostics in server logs and the API response generic. */
+  private async deliverEmail(
+    transporter: nodemailer.Transporter,
+    message: nodemailer.SendMailOptions,
+  ): Promise<void> {
+    try {
+      await transporter.sendMail(message);
+    } catch (error) {
+      const smtpError = error as {
+        code?: string;
+        command?: string;
+        responseCode?: number;
+        timeoutType?: string;
+      };
+      this.logger.error(
+        `SMTP delivery failed (code=${smtpError.code ?? 'unknown'}, command=${smtpError.command ?? 'unknown'}, timeout=${smtpError.timeoutType ?? 'none'}, responseCode=${smtpError.responseCode ?? 'none'})`,
+      );
+      throw new ServiceUnavailableException(
+        'Le service e-mail est temporairement indisponible. Réessayez plus tard.',
+      );
+    }
   }
 
   async sendOtp(phone: string, otpCode: string) {
